@@ -34,7 +34,15 @@ The HRNet checkpoint is required only for training from scratch. Pass the tokeni
 
 ## Data Preparation
 
-Download Human3.6M from the [official website](http://vision.imar.ro/human3.6m/) and prepare the following files:
+1. Download the following three annotation files from [Baidu Netdisk](https://pan.baidu.com/s/1-oPDoKGd67vW5-WAlYHHCg?pwd=ey9w) (extraction code: `ey9w`) and place them in `data/h36m/`:
+
+   - `bboxes_xyxy.pkl`
+   - `h36m_sh_conf_cam_source_final_wJ2dCpn.pkl`
+   - `images_source.pkl`
+
+2. Download the Human3.6M images from the [official Human3.6M website](http://vision.imar.ro/human3.6m/) and extract them into `data/h36m/images_fps50/`. The image files are not included in the Baidu Netdisk download and must be obtained from the official website.
+
+After downloading the annotations and images, the data directory should contain:
 
 ```text
 data/h36m/
@@ -45,7 +53,7 @@ data/h36m/
 └── images_fps50_cropped_448x448/
 ```
 
-Extract the Human3.6M frames to `data/h36m/images_fps50/`, then generate the 448 × 448 person crops:
+3. Generate the 448 × 448 person crops in `data/h36m/images_fps50_cropped_448x448/`:
 
 ```bash
 python tools/crop_images_448.py \
