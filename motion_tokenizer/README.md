@@ -23,7 +23,7 @@ A CUDA-capable GPU is required. Our reference environment uses Python 3.10, PyTo
 
 ## Pretrained Weights
 
-Place the pretrained weights at the following paths:
+Download the HRNet and Superman motion tokenizer pretrained weights from [Baidu Netdisk](https://pan.baidu.com/s/1Tf3BzzMa23nvfXcNV4wxjw?pwd=v8km) (extraction code: `v8km`). Place the downloaded files at the following paths:
 
 | Weight | Path |
 | --- | --- |
