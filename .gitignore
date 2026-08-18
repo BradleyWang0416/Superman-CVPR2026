@@ -1,0 +1,34 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Datasets and weights are downloaded / generated locally. These must stay
+# path-anchored: a bare `data/` also matches src/llamafactory/data/, which is
+# source code the overlay cannot work without.
+checkpoint/
+
+# training outputs
+experiment/
+saves/
+*.log
+train.out
+crop_images_448_failures.txt
+
+.vscode/
+.idea/
+.DS_Store
+
+# internal one-off utility, not part of the release
+**/tools/convert_checkpoint.py
+
+# staging area for the artifacts that are hosted outside git
+LLaMA-Factory/_llamafactory_skeleton_byBrad/saves
+LLaMA-Factory/_llamafactory_skeleton_byBrad/data
+LLaMA-Factory/_llamafactory_skeleton_byBrad/cache
+
+motion_tokenizer/checkpoint
+motion_tokenizer/data
+tmp
+
+*.npy

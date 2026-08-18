@@ -37,10 +37,14 @@ class VisualSkeletonAttention(nn.Module):
 
 
 class VisionGuidedMotionTokenizer(nn.Module):
-    def __init__(self, encoder, decoder, vq, vision_config):
+    def __init__(self, encoder, decoder, vq, vision_config,
+                 joint_data_type='joint3d_image_affined_normed'):
         super(VisionGuidedMotionTokenizer, self).__init__()
 
-        self.joint_data_type = 'joint3d_image_affined_normed'
+        # Which key of the batch dict holds the joints. The released tokenizer was
+        # trained on the affine-normalised representation; Stage 2 passes this
+        # explicitly when it reuses the model to encode its own data.
+        self.joint_data_type = joint_data_type
 
         num_channels_list = vision_config.model.backbone.STAGE4.NUM_CHANNELS
         self.hrnet_output_level = [0,1,2,3]

@@ -1,0 +1,19 @@
+# Install a PyTorch build matching your CUDA version first, e.g.
+#   pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu126
+# The versions below are the ones the released checkpoint was trained and evaluated with.
+
+torch==2.7.1
+torchvision==0.22.1
+
+accelerate==1.7.0
+safetensors==0.5.3
+numpy==1.26.4
+opencv-python==4.11.0.86
+joblib==1.5.1
+easydict==1.13
+PyYAML==6.0.2
+tqdm==4.67.1
+
+# Note: train.py constructs an accelerate tensorboard tracker but never calls
+# accelerator.log(), so no scalars are ever written. Training metrics go to the
+# plain-text log under <project_dir>/logs/ instead, and tensorboard is not required.

@@ -19,8 +19,8 @@ class Multimodal_Mocap_Dataset(torch.utils.data.Dataset):
                               'joint3d_image_affined_normed', 'joint3d_image_affined_scale', 'joint3d_image_affined_transl',
                               'affine_trans_inv', 'joint_2_5d_image']
 
-        self.img_mean = np.array([0.485, 0.456, 0.406])
-        self.img_std = np.array([0.229, 0.224, 0.225])
+        self.img_mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        self.img_std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
         data_dict = {}
         data_list = []
@@ -138,8 +138,10 @@ class Multimodal_Mocap_Dataset(torch.utils.data.Dataset):
                 raise FileNotFoundError(f"Failed to read image: {img_path}")
             video_bgr.append(image_bgr)
         video_bgr = np.stack(video_bgr, axis=0)  # (num_frames, H, W, 3), BGR order
-        video_rgb = video_bgr[..., ::-1]  # Convert BGR to RGB
-        video_rgb = (video_rgb / 255.0 - self.img_mean) / self.img_std   # to [0,1], then normalize
+        video_rgb = video_bgr[..., ::-1].astype(np.float32)  # Convert BGR to RGB
+        # Stay in float32: dividing uint8 by a Python float promotes to float64, which costs
+        # ~74 MiB and ~85 ms per clip before being cast straight back down to float32 below.
+        video_rgb = (video_rgb / np.float32(255.0) - self.img_mean) / self.img_std   # to [0,1], then normalize
 
         joint3d_image_affined = self.data_dict[dt_file]['joint3d_image_affined'][slice_id]  # (num_frames, 17, 3)
         joint3d_image_affined_scale = self.data_dict[dt_file]['joint3d_image_affined_scale'][slice_id]  # (num_frames, 3)

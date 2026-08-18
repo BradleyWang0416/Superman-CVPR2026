@@ -1,0 +1,143 @@
+model_name_or_path: "Qwen/Qwen3-VL-8B-Instruct"   # HF hub id, or a local path
+# Point at the run's output_dir, not a checkpoint-N subdir: the final adapter is saved
+# at the root, and N depends on the GPU count (3 epochs = 10,431 steps on 7 GPUs,
+# 9,126 on 8). Use a checkpoint-N path only to evaluate a specific mid-training state.
+adapter_name_or_path: _llamafactory_skeleton_byBrad/saves/joint_and_image/joint3d_image_affined_448x448/f8s1d8/cb8192x2048_mpjpe_Tdown1-2/hrFix_lvl0123_adaSmpl/step500000/h36m/00_SkelAttnType/01_deformable_attn_w_joint2dcpn_crsattn/00_Vid2Skel/BodypartAwareExplicit_text/10_qwen3vl/01_newVGMT/train
+do_train: false
+output_dir: _llamafactory_skeleton_byBrad/saves/_eval_smoke
+do_predict: true
+predict_with_generate: true
+
+### method
+stage: sft
+finetuning_type: lora
+lora_rank: 8
+# lora_target: all
+
+
+
+
+
+# video_max_pixels: 49168   # 192*256+16. default: 16384=128*128
+video_max_pixels: 200720   # 448*448+16
+
+freeze_vision_tower: false   # default: true
+
+# ------------------------------------ src/llamafactory/model/adapter.py::L200 ----------------------------------------------------------------------------
+# if is_trainable and adapter_to_resume is None:  # create new lora weights while training
+#     if len(finetuning_args.lora_target) == 1 and finetuning_args.lora_target[0] == "all":
+#         target_modules = find_all_linear_modules(model, finetuning_args.freeze_vision_tower)
+# >>> target_modules 的输出为 ['up_proj', 'k_proj', 'weight_predictor', 'q_proj', 'o_proj', 'gate_proj', 'down_proj', 'v_proj', 'offset_predictor']
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------
+# lora_target: ['up_proj', 'k_proj', 'weight_predictor', 'q_proj', 'o_proj', 'gate_proj', 'down_proj', 'v_proj', 'offset_predictor']
+# lora_target: ['up_proj', 'k_proj', 'q_proj', 'o_proj', 'gate_proj', 'down_proj', 'v_proj']
+
+
+
+
+# lora_target: ['up_proj', 'k_proj', 'q_proj', 'o_proj', 'gate_proj', 'down_proj', 'v_proj', 'visual.blocks']
+lora_target: ['up_proj', 'k_proj', 'q_proj', 'o_proj', 'gate_proj', 'down_proj', 'v_proj']
+
+# visual.blocks 结构:
+# 'model.visual.blocks.0.norm1'
+# 'model.visual.blocks.0.norm2'
+# 'model.visual.blocks.0.attn'
+# 'model.visual.blocks.0.attn.qkv'
+# 'model.visual.blocks.0.attn.proj'
+# 'model.visual.blocks.0.mlp'
+# 'model.visual.blocks.0.mlp.gate_proj'
+# 'model.visual.blocks.0.mlp.up_proj'
+# 'model.visual.blocks.0.mlp.down_proj'
+# 'model.visual.blocks.0.mlp.act_fn'
+# up_proj, gate_proj, down_proj 已经包含在了 lora_target 中, 不需要 visual.blocks. 记得 freeze_vision_tower=False
+
+
+
+
+# ------------------------------------ src/llamafactory/model/adapter.py::L228 ----------------------------------------------------------------------------
+# if model_args.resize_vocab and finetuning_args.additional_target is None:
+#     input_embeddings = model.get_input_embeddings()
+#     output_embeddings = model.get_output_embeddings()
+#     module_names = set()
+#     for name, module in model.named_modules():
+#         if module in [input_embeddings, output_embeddings]:
+#             module_names.add(name.split(".")[-1])
+#     finetuning_args.additional_target = module_names
+#     logger.warning_rank0("Vocab has been resized, add {} to trainable params.".format(",".join(module_names)))
+# >>> module_names 为 set 类型变量: {'lm_head', 'embed_tokens'}
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------
+additional_target: ['model.deformable_sampler', 'pose_video_cross_attention', 'pose_video_ffn', 'norm_q', 'norm_kv', 'norm_ffn', 'lm_head', 'embed_tokens', 'visual.merger']
+resize_vocab: true
+vqvae_config: vqvae_config.py
+add_special_tokens: <|skel_start|>,<|skel_end|>
+# !!!!!!!!!!! 记得检查 additional_target 和 resize_vocab, vqvae_config, add_special_tokens 是否对应 !!!!!!!!!!!
+# 只有 resize_vocab 为 True 时才需要 lm_head 和 embed_tokens 加入 additional_target
+
+freeze_multi_modal_projector: false
+
+dataset: [placeholder,eval_dataset]   # see: src/llamafactory/data/parser.py::get_dataset_list
+dataset_dir:
+    "placeholder":
+        "file_name": 
+            _llamafactory_skeleton_byBrad/data/joint_and_image/joint3d_image_affined_448x448/f8s1d8/cb8192x2048_mpjpe_Tdown1-2/hrFix_lvl0123_adaSmpl_hrnetPretrained/step_500000/h36m/Vid2Skel/train_data.jsonl
+        "formatting": "sharegpt"
+        "columns":
+            "messages": "conversations"
+            "videos": "videos"
+            "skeletons": "skeletons"
+    "eval_dataset":
+        "file_name": 
+            _llamafactory_skeleton_byBrad/data/joint_and_image/joint3d_image_affined_448x448/f8s1d64/cb8192x2048_mpjpe_Tdown1-2/hrFix_lvl0123_adaSmpl_hrnetPretrained/step_500000/h36m/Vid2Skel/test_data.jsonl
+        "formatting": "sharegpt"
+        "columns":
+            "messages": "conversations"
+            "videos": "videos"
+            "skeletons": "skeletons"
+
+dataset_eval_range:
+    placeholder: slice(0, 8, 1)
+    eval_dataset: slice(0, 64, 1)
+
+tokenized_path: _llamafactory_skeleton_byBrad/cache/_smoke_test
+# 64 samples in 2 subbatches of 32 exercises the same subbatch path used by the full test.
+eval_subbatch_size: 32
+
+
+### model
+image_max_pixels: 262144
+trust_remote_code: true
+
+
+### dataset
+template: qwen2_vl
+# cutoff_len: 2048
+cutoff_len: 4096
+overwrite_cache: true
+
+
+
+# max_samples: 999999
+low_cpu_mem_usage: False
+preprocessing_batch_size: 128
+preprocessing_num_workers: 32
+dataloader_num_workers: 32
+# preprocessing_num_workers: 1    # 使用 16 在 src/llamafactory/data/loader.py 中的 dataset.map 这一步会报错
+# dataloader_num_workers: 1
+
+### output
+logging_steps: 10
+save_steps: 500
+plot_loss: true
+overwrite_output_dir: true
+save_only_model: false
+report_to: none  # choices: [none, wandb, tensorboard, swanlab, mlflow]
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-4
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+

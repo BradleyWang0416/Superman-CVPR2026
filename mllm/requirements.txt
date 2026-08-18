@@ -1,0 +1,21 @@
+# Dependencies Stage 2 needs on top of a LLaMA-Factory checkout.
+#
+# Install LLaMA-Factory itself with `pip install -e . --no-deps` (its pinned extras
+# would downgrade transformers below Qwen3-VL support), then:
+#
+#     pip install -r /path/to/Superman-CVPR2026/mllm/requirements.txt
+
+easydict==1.13
+joblib==1.5.1
+opencv-python==4.11.0.86
+
+# Qwen3-VL requires transformers >= 4.57, and only the 5.x line accepts
+# huggingface_hub 1.x. Every transformers 5.x imports tokenization_mistral_common
+# while resolving AutoProcessor, so mistral_common must be new enough for it even
+# though nothing here uses Mistral -- see the "Dependencies" section of README.md.
+transformers>=5.0,<5.5
+mistral_common>=1.9
+
+# Stage 1 is imported through mllm/llamafactory_overlay/superman_stage1.py, so
+# motion_tokenizer/requirements.txt must be satisfied too. It pins torch/torchvision
+# and pulls no transformers of its own, so it does not conflict with the above.
